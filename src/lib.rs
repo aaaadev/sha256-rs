@@ -26,7 +26,16 @@ const K: [u32; 64] = [
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ];
 
-/// Encode bytes
+/// SHA256 digest bytes
+///
+/// # Example
+///
+/// ```rust
+/// let bytes = b"hello";
+/// let result = sha256_rs::sha256(bytes);
+/// assert_eq!(result, [44, 242, 77, 186, 95, 176, 163, 14, 38, 232, 59, 42, 197, 185, 226, 158, 27, 22, 30, 92, 31, 167, 66, 94, 115, 4, 51, 98, 147, 139, 152, 36])
+/// ```
+///
 pub fn sha256(bytes: &[u8]) -> [u8; 32] {
     let mut bytes = bytes.to_vec();
     let bytes_len = bytes.len() * 8;
