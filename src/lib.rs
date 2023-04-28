@@ -26,11 +26,9 @@ const K: [u32; 64] = [
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ];
 
-/// Encode string
-pub fn sha256(string: &str) -> String {
-    let mut result = String::new();
-
-    let mut bytes = string.as_bytes().to_vec();
+/// Encode bytes
+pub fn sha256(bytes: &[u8]) -> [u8; 32] {
+    let mut bytes = bytes.to_vec();
     let bytes_len = bytes.len() * 8;
     bytes.push(0x80);
 
@@ -41,6 +39,8 @@ pub fn sha256(string: &str) -> String {
     for i in bytes_len.to_be_bytes().iter() {
         bytes.push(*i);
     }
+
+    let mut temp = vec![];
 
     for chunk in bytes.as_slice().chunks(64) {
         let mut w = [0; 64];
@@ -89,21 +89,18 @@ pub fn sha256(string: &str) -> String {
             a = temp1.wrapping_add(temp2);
         }
 
-        let res0 = H0.wrapping_add(a);
-        let res1 = H1.wrapping_add(b);
-        let res2 = H2.wrapping_add(c);
-        let res3 = H3.wrapping_add(d);
-        let res4 = H4.wrapping_add(e);
-        let res5 = H5.wrapping_add(f);
-        let res6 = H6.wrapping_add(g);
-        let res7 = H7.wrapping_add(h);
-
-        result = format!(
-            "{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}{:08x}",
-            res0, res1, res2, res3, res4, res5, res6, res7
-        )
+        temp.push(H0.wrapping_add(a).to_be_bytes());
+        temp.push(H1.wrapping_add(b).to_be_bytes());
+        temp.push(H2.wrapping_add(c).to_be_bytes());
+        temp.push(H3.wrapping_add(d).to_be_bytes());
+        temp.push(H4.wrapping_add(e).to_be_bytes());
+        temp.push(H5.wrapping_add(f).to_be_bytes());
+        temp.push(H6.wrapping_add(g).to_be_bytes());
+        temp.push(H7.wrapping_add(h).to_be_bytes());
     }
 
+    let mut result = [0u8; 32];
+    result.copy_from_slice(temp.concat().as_slice());
     result
 }
 
@@ -114,23 +111,35 @@ mod tests {
     #[test]
     fn it_works() {
         assert_eq!(
-            sha256("Test"),
-            String::from("532eaabd9574880dbf76b9b8cc00832c20a6ec113d682299550d7a6e0f345e25")
+            sha256("Test".as_bytes()),
+            [
+                83, 46, 170, 189, 149, 116, 136, 13, 191, 118, 185, 184, 204, 0, 131, 44, 32, 166,
+                236, 17, 61, 104, 34, 153, 85, 13, 122, 110, 15, 52, 94, 37
+            ]
         );
 
         assert_eq!(
-            sha256("Rust"),
-            String::from("d9aa89fdd15ad5c41d9c128feffe9e07dc828b83f85296f7f42bda506821300e")
+            sha256("Rust".as_bytes()),
+            [
+                217, 170, 137, 253, 209, 90, 213, 196, 29, 156, 18, 143, 239, 254, 158, 7, 220,
+                130, 139, 131, 248, 82, 150, 247, 244, 43, 218, 80, 104, 33, 48, 14
+            ]
         );
 
         assert_eq!(
-            sha256("hello world"),
-            String::from("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9")
+            sha256("hello world".as_bytes()),
+            [
+                185, 77, 39, 185, 147, 77, 62, 8, 165, 46, 82, 215, 218, 125, 171, 250, 196, 132,
+                239, 227, 122, 83, 128, 238, 144, 136, 247, 172, 226, 239, 205, 233
+            ]
         );
 
         assert_eq!(
-            sha256("Lorem ipsum dolor sit amet, consectetur adipiscing elit"),
-            String::from("07fe4d4a25718241af145a93f890eb5469052e251d199d173bd3bd50c3bb4da2")
+            sha256("Lorem ipsum dolor sit amet, consectetur adipiscing elit".as_bytes()),
+            [
+                7, 254, 77, 74, 37, 113, 130, 65, 175, 20, 90, 147, 248, 144, 235, 84, 105, 5, 46,
+                37, 29, 25, 157, 23, 59, 211, 189, 80, 195, 187, 77, 162
+            ]
         );
     }
 }
