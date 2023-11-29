@@ -49,7 +49,15 @@ pub fn sha256(bytes: &[u8]) -> [u8; 32] {
         bytes.push(*i);
     }
 
-    let mut temp = vec![];
+    let mut temp: [u32; 8] = [0u32; 8];
+    temp[0] = H0;
+    temp[1] = H1;
+    temp[2] = H2;
+    temp[3] = H3;
+    temp[4] = H4;
+    temp[5] = H5;
+    temp[6] = H6;
+    temp[7] = H7;
 
     for chunk in bytes.as_slice().chunks(64) {
         let mut w = [0; 64];
@@ -67,14 +75,14 @@ pub fn sha256(bytes: &[u8]) -> [u8; 32] {
                 .wrapping_add(s1);
         }
 
-        let mut a = H0;
-        let mut b = H1;
-        let mut c = H2;
-        let mut d = H3;
-        let mut e = H4;
-        let mut f = H5;
-        let mut g = H6;
-        let mut h = H7;
+        let mut a = temp[0];
+        let mut b = temp[1];
+        let mut c = temp[2];
+        let mut d = temp[3];
+        let mut e = temp[4];
+        let mut f = temp[5];
+        let mut g = temp[6];
+        let mut h = temp[7];
 
         for i in 0..64 {
             let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
@@ -98,18 +106,24 @@ pub fn sha256(bytes: &[u8]) -> [u8; 32] {
             a = temp1.wrapping_add(temp2);
         }
 
-        temp.push(H0.wrapping_add(a).to_be_bytes());
-        temp.push(H1.wrapping_add(b).to_be_bytes());
-        temp.push(H2.wrapping_add(c).to_be_bytes());
-        temp.push(H3.wrapping_add(d).to_be_bytes());
-        temp.push(H4.wrapping_add(e).to_be_bytes());
-        temp.push(H5.wrapping_add(f).to_be_bytes());
-        temp.push(H6.wrapping_add(g).to_be_bytes());
-        temp.push(H7.wrapping_add(h).to_be_bytes());
+        temp[0] = temp[0].wrapping_add(a);
+        temp[1] = temp[1].wrapping_add(b);
+        temp[2] = temp[2].wrapping_add(c);
+        temp[3] = temp[3].wrapping_add(d);
+        temp[4] = temp[4].wrapping_add(e);
+        temp[5] = temp[5].wrapping_add(f);
+        temp[6] = temp[6].wrapping_add(g);
+        temp[7] = temp[7].wrapping_add(h);
     }
 
+    let temp = temp
+        .iter()
+        .map(|x| x.to_be_bytes())
+        .collect::<Vec<[u8; 4]>>()
+        .concat();
+
     let mut result = [0u8; 32];
-    result.copy_from_slice(temp.concat().as_slice());
+    result.copy_from_slice(temp.as_slice());
     result
 }
 
@@ -120,7 +134,7 @@ mod tests {
     #[test]
     fn it_works() {
         assert_eq!(
-            sha256("Test".as_bytes()),
+            sha256(b"Test"),
             [
                 83, 46, 170, 189, 149, 116, 136, 13, 191, 118, 185, 184, 204, 0, 131, 44, 32, 166,
                 236, 17, 61, 104, 34, 153, 85, 13, 122, 110, 15, 52, 94, 37
@@ -128,7 +142,7 @@ mod tests {
         );
 
         assert_eq!(
-            sha256("Rust".as_bytes()),
+            sha256(b"Rust"),
             [
                 217, 170, 137, 253, 209, 90, 213, 196, 29, 156, 18, 143, 239, 254, 158, 7, 220,
                 130, 139, 131, 248, 82, 150, 247, 244, 43, 218, 80, 104, 33, 48, 14
@@ -136,7 +150,7 @@ mod tests {
         );
 
         assert_eq!(
-            sha256("hello world".as_bytes()),
+            sha256(b"hello world"),
             [
                 185, 77, 39, 185, 147, 77, 62, 8, 165, 46, 82, 215, 218, 125, 171, 250, 196, 132,
                 239, 227, 122, 83, 128, 238, 144, 136, 247, 172, 226, 239, 205, 233
@@ -144,11 +158,16 @@ mod tests {
         );
 
         assert_eq!(
-            sha256("Lorem ipsum dolor sit amet, consectetur adipiscing elit".as_bytes()),
+            sha256(b"Lorem ipsum dolor sit amet, consectetur adipiscing elit"),
             [
                 7, 254, 77, 74, 37, 113, 130, 65, 175, 20, 90, 147, 248, 144, 235, 84, 105, 5, 46,
                 37, 29, 25, 157, 23, 59, 211, 189, 80, 195, 187, 77, 162
             ]
+        );
+
+        assert_eq!(
+            sha256(b"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
+            [45, 140, 47, 109, 151, 140, 162, 23, 18, 181, 246, 222, 54, 201, 211, 31, 168, 233, 106, 79, 165, 216, 255, 139, 1, 136, 223, 185, 231, 193, 113, 187]
         );
     }
 }
