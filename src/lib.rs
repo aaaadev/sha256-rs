@@ -26,27 +26,37 @@ const K: [u32; 64] = [
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ];
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Mode {
+    Default,
+    Midstate,
+}
+
 /// SHA256 digest bytes
 ///
 /// # Example
 ///
 /// ```rust
 /// let bytes = b"hello";
-/// let result = sha256_rs::sha256(bytes);
+/// let result = sha256_rs::sha256(bytes, sha256_rs::Mode::Default);
 /// assert_eq!(result, [44, 242, 77, 186, 95, 176, 163, 14, 38, 232, 59, 42, 197, 185, 226, 158, 27, 22, 30, 92, 31, 167, 66, 94, 115, 4, 51, 98, 147, 139, 152, 36])
 /// ```
 ///
-pub fn sha256(bytes: &[u8]) -> [u8; 32] {
+pub fn sha256(bytes: &[u8], mode: Mode) -> [u8; 32] {
     let mut bytes = bytes.to_vec();
     let bytes_len = bytes.len() * 8;
-    bytes.push(0x80);
+    if mode == Mode::Default {
+        bytes.push(0x80);
 
-    while (bytes.len() % 64) != 56 {
-        bytes.push(0);
-    }
+        while (bytes.len() % 64) != 56 {
+            bytes.push(0);
+        }
 
-    for i in bytes_len.to_be_bytes().iter() {
-        bytes.push(*i);
+        for i in bytes_len.to_be_bytes().iter() {
+            bytes.push(*i);
+        }
+    } else if mode == Mode::Midstate {
+        assert!(bytes.len() % 64 == 0);
     }
 
     let mut temp: [u32; 8] = [0u32; 8];
@@ -134,7 +144,7 @@ mod tests {
     #[test]
     fn it_works() {
         assert_eq!(
-            sha256(b"Test"),
+            sha256(b"Test", Mode::Default),
             [
                 83, 46, 170, 189, 149, 116, 136, 13, 191, 118, 185, 184, 204, 0, 131, 44, 32, 166,
                 236, 17, 61, 104, 34, 153, 85, 13, 122, 110, 15, 52, 94, 37
@@ -142,7 +152,7 @@ mod tests {
         );
 
         assert_eq!(
-            sha256(b"Rust"),
+            sha256(b"Rust", Mode::Default),
             [
                 217, 170, 137, 253, 209, 90, 213, 196, 29, 156, 18, 143, 239, 254, 158, 7, 220,
                 130, 139, 131, 248, 82, 150, 247, 244, 43, 218, 80, 104, 33, 48, 14
@@ -150,7 +160,7 @@ mod tests {
         );
 
         assert_eq!(
-            sha256(b"hello world"),
+            sha256(b"hello world", Mode::Default),
             [
                 185, 77, 39, 185, 147, 77, 62, 8, 165, 46, 82, 215, 218, 125, 171, 250, 196, 132,
                 239, 227, 122, 83, 128, 238, 144, 136, 247, 172, 226, 239, 205, 233
@@ -158,7 +168,7 @@ mod tests {
         );
 
         assert_eq!(
-            sha256(b"Lorem ipsum dolor sit amet, consectetur adipiscing elit"),
+            sha256(b"Lorem ipsum dolor sit amet, consectetur adipiscing elit", Mode::Default),
             [
                 7, 254, 77, 74, 37, 113, 130, 65, 175, 20, 90, 147, 248, 144, 235, 84, 105, 5, 46,
                 37, 29, 25, 157, 23, 59, 211, 189, 80, 195, 187, 77, 162
@@ -166,7 +176,7 @@ mod tests {
         );
 
         assert_eq!(
-            sha256(b"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
+            sha256(b"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", Mode::Default),
             [45, 140, 47, 109, 151, 140, 162, 23, 18, 181, 246, 222, 54, 201, 211, 31, 168, 233, 106, 79, 165, 216, 255, 139, 1, 136, 223, 185, 231, 193, 113, 187]
         );
     }
